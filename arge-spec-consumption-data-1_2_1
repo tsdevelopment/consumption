@@ -1,0 +1,901 @@
+openapi: 3.0.3
+info:
+  description: |
+    English
+    =======
+
+    General Information
+    -------------------
+    As part of the EU Energy Efficiency Directive (EED), the ARGE HeiWaKo (www.arge-heiwako.de) publishes a web service
+    with which monthly consumption data for residential units can be retrieved at billing unit level from a
+    measuring service company (MSC).
+
+    This service is intended to enable the housing industry to provide users/residents with consumption information
+    during the year in their own IT systems as part of the EED.
+
+    The service can be implemented by any interested party in its software.
+
+    The server side is covered by the MSC.
+
+    The service was developed according to the criteria of security and minimum implementation costs.
+
+
+    Change Log
+    ----------
+
+    Version 1.2.1:
+    * Count of available billing units with data services information
+
+    Version 1.2:
+    * Added information for consumption data services per billing unit
+    * remarklist on residentialunit
+
+    Version 1.1:
+    * Added benchmark
+    * Added flag for converted consumptions
+
+
+    Data Model
+    ----------
+    This API uses the following roles:
+    * MSC: The measuring service company providing the consumption data.
+    * PM: The property management as customer of the MSC respectively the software reading the consumption data.
+
+    Security
+    --------
+    The service is protected with basicAuth authentication and data must be transmitted on a secure channel (HTTPS/SSL).
+
+
+    Deutsch
+    =======
+
+    Allgemeine Informationen
+    ------------------------
+    Im Rahmen der Energieeffizienzrichtlinie der EU (EED) veröffentlicht die die ARGE HeiWaKo (www.arge-heiwako.de) eine
+    Schnittstelle, mit der monatliche Verbrauchsdaten auf Nutzeinheitenebene vom Messdienstleistern
+    (measuring service company, MSC) abgerufen werden können.
+
+    Diese Schnittstelle soll es der Wohnungswirtschaft ermöglichen, Nutzern/Bewohnern eine unterjährige Verbrauchsinformation
+    im Rahmen der EED in eigenen IT-Systemen bereitzustellen.
+
+    Die Serverseite wird von den Messdienstleistern bereitgestellt.
+
+    Der Service wurde nach den Kriterien Sicherheit und minimalem Implementierungsaufwand entwickelt.
+
+
+    Änderungen
+    ----------
+
+    Version 1.2.1:
+    * Anzahl der verfügbaren Abrechnungseinheiten mit Information zur Service-Aktivierung
+
+    Version 1.2:
+    * Information zu Service-Aktivierung Verbrauchsdaten für Abrechnungseinheiten hinzugefügt
+    * Liste von Bemerkungen auf Nutzeinheits-Ebene
+
+    Version 1.1:
+    * Benchmark hinzugefügt
+    * Kennzeichen für umgerechnete Verbräuche hinzugefügt (converted)
+
+
+    Datenmodell
+    -----------
+    Diese API verwendet die folgenden Rollen:
+    * MSC: Der Messdienstleister, der die Verbrauchsdaten zur Verfügung stellt.
+    * PM: Die Hausverwaltung als Kunde des MSC bzw. die Software, die die Verbrauchsdaten ausliest.
+
+    Sicherheit
+    ----------
+
+    Die Schnittstelle ist mit basicAuth-Verfahren gesichert.
+    Die Datenübertragung muss über einen sicheren Kanal erfolgen (HTTPS/SSL).
+
+
+    History
+    =======
+
+    * 2022-01-28: Added comment regarding interpretation of the `unitofmeasure` when `converted` flag is set.
+    * 2022-06-09: Added service configuration request
+  title: ARGE specification for EED consumption data exchange.
+  version: 1.2.1
+servers:
+- url: /
+paths:
+  /eedbillingunits:
+    get:
+      description: |
+        Returns a list of all billing units of the current user that are configured for data exchange
+        and a flag if consumption data services are enabled or comments about availability of the service
+      operationId: getBillingunits
+      parameters:
+      - description: How many result entries to return at one time (max 100)
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          exclusiveMaximum: false
+          exclusiveMinimum: true
+          format: int32
+          maximum: 100
+          minimum: 0
+          multipleOf: 10
+          type: integer
+      - description: How many result entries should be skipped for pagination
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          exclusiveMaximum: false
+          exclusiveMinimum: false
+          format: int32
+          minimum: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceConfiguration'
+          description: List of billing units with consumption data enablement flag.
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No billing units configured for the current user.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+      security:
+      - basicAuth: []
+      summary: Get overview of billingunits with their consumption data service configuration
+        and status
+      tags:
+      - eed-consumption
+  /eedbillingunits/count:
+    get:
+      description: "Get the number of billing units, independent of the EED activation\
+        \ status."
+      operationId: countBillingunits
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceConfigurationCount'
+          description: Number of available billing units
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No billing units configured for the current user.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+      security:
+      - basicAuth: []
+      summary: Get the number of available billing units
+      tags:
+      - eed-consumption
+  /billingunits/{billingunit}/consumptions/periods:
+    get:
+      description: |
+        This list contains the available consumption data sets for a billing unit.
+
+        The number of available data is subject to contractual agreement between PM and MSC.
+      operationId: getConsumptionSummary
+      parameters:
+      - description: The identifier of the billing unit defined by the measuring service
+          company to request data for.
+        in: path
+        name: billingunit
+        required: true
+        schema:
+          $ref: '#/components/schemas/BillingUnitNumberMSC'
+      - description: Request consumption summaries for this year only.
+        explode: true
+        in: query
+        name: year
+        required: false
+        schema:
+          $ref: '#/components/schemas/Year'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumptionSummary'
+          description: The consumption data overview.
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No data found for the given billing unit.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+      security:
+      - basicAuth: []
+      summary: Get a summary of available consumption data sets for a billing unit.
+      tags:
+      - eed-consumption
+  /billingunits/{billingunit}/consumptions/periods/{period}:
+    get:
+      operationId: getConsumptionData
+      parameters:
+      - description: The identifier of the billing unit defined by the measuring service
+          company to request data for.
+        in: path
+        name: billingunit
+        required: true
+        schema:
+          $ref: '#/components/schemas/BillingUnitNumberMSC'
+      - description: Identifier of a requested consumption period.
+        explode: false
+        in: path
+        name: period
+        required: true
+        schema:
+          $ref: '#/components/schemas/PeriodId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumptionData'
+          description: The consumption data overview.
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No data found for the given billing unit and/or period.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+      security:
+      - basicAuth: []
+      summary: Get consumption data for a billing unit and specific consumption period.
+      tags:
+      - eed-consumption
+components:
+  parameters:
+    Year:
+      description: Request consumption summaries for this year only.
+      explode: true
+      in: query
+      name: year
+      required: false
+      schema:
+        $ref: '#/components/schemas/Year'
+      style: form
+    Period:
+      description: Identifier of a requested consumption period.
+      explode: false
+      in: path
+      name: period
+      required: true
+      schema:
+        $ref: '#/components/schemas/PeriodId'
+      style: simple
+    Limit:
+      description: How many result entries to return at one time (max 100)
+      in: query
+      name: limit
+      required: false
+      schema:
+        default: 20
+        exclusiveMaximum: false
+        exclusiveMinimum: true
+        format: int32
+        maximum: 100
+        minimum: 0
+        multipleOf: 10
+        type: integer
+    Offset:
+      description: How many result entries should be skipped for pagination
+      in: query
+      name: offset
+      required: false
+      schema:
+        default: 0
+        exclusiveMaximum: false
+        exclusiveMinimum: false
+        format: int32
+        minimum: 0
+        type: integer
+    BillingUnitNumberMSC:
+      description: The identifier of the billing unit defined by the measuring service
+        company to request data for.
+      in: path
+      name: billingunit
+      required: true
+      schema:
+        $ref: '#/components/schemas/BillingUnitNumberMSC'
+  schemas:
+    Benchmark:
+      description: "Benchmark as required by the German HeizkostenV legislation for\
+        \ a specific service, period and billing unit."
+      example:
+        amount: 80.0
+        service: null
+        unitofmeasure: KWH
+      properties:
+        service:
+          $ref: '#/components/schemas/Service'
+        unitofmeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        amount:
+          description: The benchmark amount.
+          example: 80.0
+          type: number
+      required:
+      - amount
+      - service
+      - unitofmeasure
+      type: object
+    Consumption:
+      description: "Consumption for a specific service, period and billing unit."
+      example:
+        amount: 99.03
+        converted: false
+        service: null
+        estimated: true
+        remarkcodes:
+        - PARTLY_ESTIMATED
+        - PARTLY_ESTIMATED
+        unitofmeasure: KWH
+        errors: false
+      properties:
+        service:
+          $ref: '#/components/schemas/Service'
+        unitofmeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        amount:
+          description: "The actual consumption amount in case no errors are present,\
+            \ related to `unitofmeasure`."
+          example: 99.03
+          type: number
+        converted:
+          description: |
+            True if the amount is converted from another unit of measure.
+
+            If set to `true`, the `unitofmeasure` contains `KWH`.
+            These KWH must be differentiated from measured KWH and their interpretation might be different.
+
+            This applies e.g. when consumption measured in `HCU` is converted to `KWH`
+            as required by the German HeizkostenV regulations.
+          example: false
+          type: boolean
+        estimated:
+          description: True if this is an estimated consumption.
+          example: true
+          type: boolean
+        errors:
+          description: True if errors occurred and no consumption can be presented.
+          example: false
+          type: boolean
+        remarkcodes:
+          description: statuslist on residential unit base
+          items:
+            $ref: '#/components/schemas/RemarkCodeListResidentialUnitEntry'
+          type: array
+      required:
+      - converted
+      - errors
+      - estimated
+      - service
+      - unitofmeasure
+      type: object
+    ConsumptionData:
+      description: Consumption data for a billing unit and specific period.
+      example:
+        billingunit:
+          reference:
+            pmnumber: A/BC/123456789
+            mscnumber: "123456789"
+          period: 2021-06
+          residentialunits:
+          - reference:
+              pmnumber: XY-12345-00-R1
+              mscnumber: "0010"
+            consumptions:
+            - amount: 99.03
+              converted: false
+              service: null
+              estimated: true
+              remarkcodes:
+              - PARTLY_ESTIMATED
+              - PARTLY_ESTIMATED
+              unitofmeasure: KWH
+              errors: false
+            - amount: 99.03
+              converted: false
+              service: null
+              estimated: true
+              remarkcodes:
+              - PARTLY_ESTIMATED
+              - PARTLY_ESTIMATED
+              unitofmeasure: KWH
+              errors: false
+            benchmarks:
+            - amount: 80.0
+              service: null
+              unitofmeasure: KWH
+            - amount: 80.0
+              service: null
+              unitofmeasure: KWH
+          - reference:
+              pmnumber: XY-12345-00-R1
+              mscnumber: "0010"
+            consumptions:
+            - amount: 99.03
+              converted: false
+              service: null
+              estimated: true
+              remarkcodes:
+              - PARTLY_ESTIMATED
+              - PARTLY_ESTIMATED
+              unitofmeasure: KWH
+              errors: false
+            - amount: 99.03
+              converted: false
+              service: null
+              estimated: true
+              remarkcodes:
+              - PARTLY_ESTIMATED
+              - PARTLY_ESTIMATED
+              unitofmeasure: KWH
+              errors: false
+            benchmarks:
+            - amount: 80.0
+              service: null
+              unitofmeasure: KWH
+            - amount: 80.0
+              service: null
+              unitofmeasure: KWH
+      properties:
+        billingunit:
+          $ref: '#/components/schemas/ConsumptionDataBillingUnit'
+      required:
+      - billingunit
+      type: object
+    ConsumptionDataBillingUnit:
+      description: Consumption data for a billing unit and specific period.
+      example:
+        reference:
+          pmnumber: A/BC/123456789
+          mscnumber: "123456789"
+        period: 2021-06
+        residentialunits:
+        - reference:
+            pmnumber: XY-12345-00-R1
+            mscnumber: "0010"
+          consumptions:
+          - amount: 99.03
+            converted: false
+            service: null
+            estimated: true
+            remarkcodes:
+            - PARTLY_ESTIMATED
+            - PARTLY_ESTIMATED
+            unitofmeasure: KWH
+            errors: false
+          - amount: 99.03
+            converted: false
+            service: null
+            estimated: true
+            remarkcodes:
+            - PARTLY_ESTIMATED
+            - PARTLY_ESTIMATED
+            unitofmeasure: KWH
+            errors: false
+          benchmarks:
+          - amount: 80.0
+            service: null
+            unitofmeasure: KWH
+          - amount: 80.0
+            service: null
+            unitofmeasure: KWH
+        - reference:
+            pmnumber: XY-12345-00-R1
+            mscnumber: "0010"
+          consumptions:
+          - amount: 99.03
+            converted: false
+            service: null
+            estimated: true
+            remarkcodes:
+            - PARTLY_ESTIMATED
+            - PARTLY_ESTIMATED
+            unitofmeasure: KWH
+            errors: false
+          - amount: 99.03
+            converted: false
+            service: null
+            estimated: true
+            remarkcodes:
+            - PARTLY_ESTIMATED
+            - PARTLY_ESTIMATED
+            unitofmeasure: KWH
+            errors: false
+          benchmarks:
+          - amount: 80.0
+            service: null
+            unitofmeasure: KWH
+          - amount: 80.0
+            service: null
+            unitofmeasure: KWH
+      properties:
+        reference:
+          $ref: '#/components/schemas/BillingUnitReference'
+        period:
+          description: Identifier of a consumption period with year and month.
+          example: 2021-06
+          pattern: "^\\d{4}-\\d{2}$"
+          type: string
+        residentialunits:
+          description: List of consumption data on residential unit level.
+          items:
+            $ref: '#/components/schemas/ConsumptionDataResidentialUnit'
+          type: array
+      required:
+      - period
+      - reference
+      - residentialunits
+      type: object
+    ConsumptionDataResidentialUnit:
+      description: Consumption data for a residential unit and specific period.
+      example:
+        reference:
+          pmnumber: XY-12345-00-R1
+          mscnumber: "0010"
+        consumptions:
+        - amount: 99.03
+          converted: false
+          service: null
+          estimated: true
+          remarkcodes:
+          - PARTLY_ESTIMATED
+          - PARTLY_ESTIMATED
+          unitofmeasure: KWH
+          errors: false
+        - amount: 99.03
+          converted: false
+          service: null
+          estimated: true
+          remarkcodes:
+          - PARTLY_ESTIMATED
+          - PARTLY_ESTIMATED
+          unitofmeasure: KWH
+          errors: false
+        benchmarks:
+        - amount: 80.0
+          service: null
+          unitofmeasure: KWH
+        - amount: 80.0
+          service: null
+          unitofmeasure: KWH
+      properties:
+        reference:
+          $ref: '#/components/schemas/ResidentialUnitReference'
+        consumptions:
+          description: Consumption values for different services and measurement units.
+          items:
+            $ref: '#/components/schemas/Consumption'
+          type: array
+        benchmarks:
+          description: Benchmarks for different services.
+          items:
+            $ref: '#/components/schemas/Benchmark'
+          type: array
+      required:
+      - consumptions
+      - reference
+      type: object
+    ConsumptionSummary:
+      description: Summary of available consumption data.
+      example:
+        billingunit:
+          reference:
+            pmnumber: A/BC/123456789
+            mscnumber: "123456789"
+          periods:
+          - period: 2021-06
+            update: 2000-01-23T04:56:07.000+00:00
+          - period: 2021-06
+            update: 2000-01-23T04:56:07.000+00:00
+      properties:
+        billingunit:
+          $ref: '#/components/schemas/ConsumptionSummaryBillingUnit'
+      required:
+      - billingunit
+      type: object
+    ConsumptionSummaryBillingUnit:
+      description: Summary of available consumption data for a billing unit.
+      example:
+        reference:
+          pmnumber: A/BC/123456789
+          mscnumber: "123456789"
+        periods:
+        - period: 2021-06
+          update: 2000-01-23T04:56:07.000+00:00
+        - period: 2021-06
+          update: 2000-01-23T04:56:07.000+00:00
+      properties:
+        reference:
+          $ref: '#/components/schemas/BillingUnitReference'
+        periods:
+          description: Overview of available consumption periods and their last update.
+          items:
+            $ref: '#/components/schemas/ConsumptionSummaryPeriod'
+          type: array
+      required:
+      - periods
+      - reference
+      type: object
+    ConsumptionSummaryPeriod:
+      description: Describes available data for a consumption period.
+      example:
+        period: 2021-06
+        update: 2000-01-23T04:56:07.000+00:00
+      properties:
+        period:
+          description: Identifier of a consumption period with year and month.
+          example: 2021-06
+          pattern: "^\\d{4}-\\d{2}$"
+          type: string
+        update:
+          description: The timestamp of the last data update for this period.
+          format: date-time
+          type: string
+      required:
+      - period
+      - update
+      type: object
+    PeriodId:
+      description: Identifier of a consumption period with year and month.
+      example: 2021-06
+      pattern: "^\\d{4}-\\d{2}$"
+      type: string
+    Service:
+      description: |
+        The service a consumption value is related to:
+
+        * `HEATING`
+        * `HOT_WATER`
+        * `COOLING`
+        * `COLD_WATER`
+      enum:
+      - HEATING
+      - HOT_WATER
+      - COOLING
+      - COLD_WATER
+      type: string
+    ServiceConfiguration:
+      description: Overview of service configurations for billing units.
+      example:
+        billingunits:
+        - reference:
+            pmnumber: A/BC/123456789
+            mscnumber: "123456789"
+          lastperiod: 2021-06
+          consumptiondata: true
+          servicestart: 2021-06
+          lastperiodupdate: 2000-01-23T04:56:07.000+00:00
+          remarkcodes:
+          - NO_RADIO_EQUIPMENT
+          - NO_RADIO_EQUIPMENT
+        - reference:
+            pmnumber: A/BC/123456789
+            mscnumber: "123456789"
+          lastperiod: 2021-06
+          consumptiondata: true
+          servicestart: 2021-06
+          lastperiodupdate: 2000-01-23T04:56:07.000+00:00
+          remarkcodes:
+          - NO_RADIO_EQUIPMENT
+          - NO_RADIO_EQUIPMENT
+      properties:
+        billingunits:
+          items:
+            $ref: '#/components/schemas/ServiceConfigurationBillingUnit'
+          type: array
+      required:
+      - billingunits
+      type: object
+    ServiceConfigurationBillingUnit:
+      description: Service configuration for a billing unit.
+      example:
+        reference:
+          pmnumber: A/BC/123456789
+          mscnumber: "123456789"
+        lastperiod: 2021-06
+        consumptiondata: true
+        servicestart: 2021-06
+        lastperiodupdate: 2000-01-23T04:56:07.000+00:00
+        remarkcodes:
+        - NO_RADIO_EQUIPMENT
+        - NO_RADIO_EQUIPMENT
+      properties:
+        reference:
+          $ref: '#/components/schemas/BillingUnitReference'
+        consumptiondata:
+          description: True if consumption data services are enabled for this billing
+            unit.
+          type: boolean
+        lastperiod:
+          description: Identifier of a consumption period with year and month.
+          example: 2021-06
+          pattern: "^\\d{4}-\\d{2}$"
+          type: string
+        lastperiodupdate:
+          description: The timestamp of the last data update for the last period.
+          format: date-time
+          type: string
+        servicestart:
+          description: Identifier of a consumption period with year and month.
+          example: 2021-06
+          pattern: "^\\d{4}-\\d{2}$"
+          type: string
+        remarkcodes:
+          description: statuslist on billing unit base
+          items:
+            $ref: '#/components/schemas/RemarkCodeListBillingUnitEntry'
+          type: array
+      required:
+      - consumptiondata
+      - reference
+      type: object
+    ServiceConfigurationCount:
+      example:
+        count: 0
+      properties:
+        count:
+          description: The number of available billing units
+          type: integer
+      required:
+      - count
+      type: object
+    UnitOfMeasure:
+      description: |
+        The measured unit:
+
+        * `KWH`
+        * `HCU`: Units of heat cost allocators.
+        * `M3`
+      enum:
+      - KWH
+      - HCU
+      - M3
+      example: KWH
+      type: string
+    Year:
+      description: Data type for year information.
+      maximum: 9999
+      minimum: 1900
+      type: integer
+    RemarkCodeListBillingUnit:
+      description: statuslist on billing unit base
+      items:
+        $ref: '#/components/schemas/RemarkCodeListBillingUnitEntry'
+      type: array
+    RemarkCodeListBillingUnitEntry:
+      description: |
+        Status of a billing unit:
+
+        * `NO_CONTRACT`: no valid contract for consumptions for this billing unit
+        * `NO_RADIO_EQUIPMENT`: Billing unit is not equipped with radio equipment
+        * `ERROR`: further unspecified errors
+      enum:
+      - NO_CONTRACT
+      - NO_RADIO_EQUIPMENT
+      - ERROR
+      example: NO_RADIO_EQUIPMENT
+      type: string
+    RemarkCodeListResidentialUnit:
+      description: statuslist on residential unit base
+      items:
+        $ref: '#/components/schemas/RemarkCodeListResidentialUnitEntry'
+      type: array
+    RemarkCodeListResidentialUnitEntry:
+      description: |
+        Status of a residential unit:
+
+        * `PARTLY_ESTIMATED`: consumption is partly based on estimated values
+        * `INCOMPLETE`: consumption cannot be calculated because of incomplete reading values - e.g. first month after installation of meters
+        * `NO_RADIO_EQUIPMENT`: Residential unit is not equipped with radio equipment or radio is not enabled
+        * `IMPLAUSIBLE_VALUES`: the values are obviously implausible to calculate consumption values
+        * `CALC_NOT_POSSIBLE`: further reasons that calculation is not possible
+        * `ERROR`: further unspecified errors
+      enum:
+      - PARTLY_ESTIMATED
+      - INCOMPLETE
+      - NO_RADIO_EQUIPMENT
+      - IMPLAUSIBLE_VALUES
+      - CALC_NOT_POSSIBLE
+      - ERROR
+      example: PARTLY_ESTIMATED
+      type: string
+    BillingUnitNumberMSC:
+      description: The identifier of a billing unit defined by the MSC.
+      example: "123456789"
+      maxLength: 9
+      minLength: 1
+      type: string
+    BillingUnitReference:
+      example:
+        pmnumber: A/BC/123456789
+        mscnumber: "123456789"
+      properties:
+        mscnumber:
+          description: The identifier of a billing unit defined by the MSC.
+          example: "123456789"
+          maxLength: 9
+          minLength: 1
+          type: string
+        pmnumber:
+          description: The identifier of a billing unit defined by the propertymanagement.
+          example: A/BC/123456789
+          maxLength: 15
+          minLength: 1
+          type: string
+      required:
+      - mscnumber
+      type: object
+    BillingUnitNumberPM:
+      description: The identifier of a billing unit defined by the propertymanagement.
+      example: A/BC/123456789
+      maxLength: 15
+      minLength: 1
+      type: string
+    ResidentialUnitReference:
+      example:
+        pmnumber: XY-12345-00-R1
+        mscnumber: "0010"
+      properties:
+        mscnumber:
+          description: The identifier of a residential unit defined by the MSC given
+            as additional information.
+          example: "0010"
+          maxLength: 4
+          minLength: 1
+          type: string
+        pmnumber:
+          description: The identifier of a residential unit defined by the PM given
+            as additional information.
+          example: XY-12345-00-R1
+          maxLength: 20
+          minLength: 1
+          type: string
+      required:
+      - mscnumber
+      type: object
+    ResidentialUnitNumberMSC:
+      description: The identifier of a residential unit defined by the MSC given as
+        additional information.
+      example: "0010"
+      maxLength: 4
+      minLength: 1
+      type: string
+    ResidentialUnitNumberPM:
+      description: The identifier of a residential unit defined by the PM given as
+        additional information.
+      example: XY-12345-00-R1
+      maxLength: 20
+      minLength: 1
+      type: string
+  securitySchemes:
+    basicAuth:
+      scheme: basic
+      type: http
