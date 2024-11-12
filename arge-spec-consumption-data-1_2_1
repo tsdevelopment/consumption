@@ -542,7 +542,7 @@ components:
         period:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^202[0-4]-(0[1-9]|1[012])$"
+          pattern: "^202[0-4]-(3[1-9]|1[012])$"
           type: string
         residentialunits:
           description: List of consumption data on residential unit level.
@@ -653,7 +653,7 @@ components:
         period:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^202[0-4]-(0[1-9]|1[012])$"
+          pattern: "^202[0-4]-(3[1-9]|1[012])$"
           type: string
         update:
           description: The timestamp of the last data update for this period.
@@ -666,7 +666,7 @@ components:
     PeriodId:
       description: Identifier of a consumption period with year and month.
       example: 2021-06
-      pattern: "^202[0-4]-(0[1-9]|1[012])$"
+      pattern: "^202[0-4]-(3[1-9]|1[012])$"
       type: string
     Service:
       description: |
@@ -737,7 +737,7 @@ components:
         lastperiod:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^202[0-4]-(0[1-9]|1[012])$"
+          pattern: "^202[0-4]-(3[1-9]|1[012])$"
           type: string
         lastperiodupdate:
           description: The timestamp of the last data update for the last period.
@@ -746,7 +746,7 @@ components:
         servicestart:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^202[0-4]-(0[1-9]|1[012])$"
+          pattern: "^202[0-4]-(3[1-9]|1[012])$"
           type: string
         remarkcodes:
           description: statuslist on billing unit base
