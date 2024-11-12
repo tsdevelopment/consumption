@@ -542,7 +542,7 @@ components:
         period:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^\\d{4}-\\d{2}$"
+          pattern: "^202[0-4]-(0?[1-9]|1[012])$"
           type: string
         residentialunits:
           description: List of consumption data on residential unit level.
@@ -653,7 +653,7 @@ components:
         period:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^\\d{4}-\\d{2}$"
+          pattern: "^202[0-4]-(0?[1-9]|1[012])$"
           type: string
         update:
           description: The timestamp of the last data update for this period.
@@ -666,7 +666,7 @@ components:
     PeriodId:
       description: Identifier of a consumption period with year and month.
       example: 2021-06
-      pattern: "^\\d{4}-\\d{2}$"
+      pattern: "^202[0-4]-(0?[1-9]|1[012])$"
       type: string
     Service:
       description: |
@@ -737,7 +737,7 @@ components:
         lastperiod:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^\\d{4}-\\d{2}$"
+          pattern: "^202[0-4]-(0?[1-9]|1[012])$"
           type: string
         lastperiodupdate:
           description: The timestamp of the last data update for the last period.
@@ -746,7 +746,7 @@ components:
         servicestart:
           description: Identifier of a consumption period with year and month.
           example: 2021-06
-          pattern: "^\\d{4}-\\d{2}$"
+          pattern: "^202[0-4]-(0?[1-9]|1[012])$"
           type: string
         remarkcodes:
           description: statuslist on billing unit base
@@ -782,8 +782,8 @@ components:
       type: string
     Year:
       description: Data type for year information.
-      maximum: 9999
-      minimum: 1900
+      maximum: 2024
+      minimum: 2020
       type: integer
     RemarkCodeListBillingUnit:
       description: statuslist on billing unit base
